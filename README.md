@@ -18,8 +18,17 @@ whip example: response body {"code":2001,"message":"failed to create publisher s
 
 ### Add video and the offer no longer fails
 
+Add video a video transceiver and a video codec as follows:
+
 - In `main.go` uncomment lines 38 - 41
 - In `webrtc.go` uncomment lines 36 - 42
+
+Run again and you should see a valid response body and the following logged in the terminal:
+
+```
+Connection State has changed connecting
+Connection State has changed connected
+```
 
 ## Security
 

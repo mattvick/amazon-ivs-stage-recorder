@@ -13,7 +13,7 @@ This program requires a Token (used to authenticate). When you have this run the
 When run you should see the offer response body logged in the terminal as
 
 ```
-whip example: response body {"code":2001,"message":"failed to create publisher session"}
+response body {"code":2001,"message":"failed to create publisher session"}
 ```
 
 ### Add video and the offer no longer fails

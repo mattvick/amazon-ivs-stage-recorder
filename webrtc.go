@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -72,7 +72,7 @@ func createPeerConnection(url, bearerToken string, configureCallback func(peerCo
 	if err != nil {
 		return nil, err
 	}
-	log.Println("offer created")
+	fmt.Println("offer created")
 
 	if err := peerConnection.SetLocalDescription(offer); err != nil {
 		return nil, err
@@ -104,15 +104,15 @@ func postOffer(bearerToken, mediaServerURL string, peerConnection *webrtc.PeerCo
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("err", err)
+		fmt.Println("err", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("err", err)
+		fmt.Println("err", err)
 	}
-	log.Println("response body", string(body))
+	fmt.Println("response body", string(body))
 
 	return peerConnection.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: string(body)})
 }

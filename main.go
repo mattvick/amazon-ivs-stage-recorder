@@ -10,16 +10,13 @@ import (
 
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
-	"github.com/pion/webrtc/v3/pkg/media/h264reader"
 	"github.com/pion/webrtc/v3/pkg/media/oggreader"
 )
 
 var (
-	// err               error
-	audioFileName     = "output.ogg"
-	videoFileName     = "output.h264"
-	oggPageDuration   = time.Millisecond * 20
-	h264FrameDuration = time.Millisecond * 33
+	err           error
+	audioFileName = "output.ogg"
+	oggPageDuration = time.Millisecond * 20
 )
 
 func main() {
@@ -30,15 +27,12 @@ func main() {
 
 	fmt.Println("have bearer token")
 
-	// Assert that we have an audio or video file
-	_, err := os.Stat(videoFileName)
-	haveVideoFile := !os.IsNotExist(err)
-
+	// Assert that we have an audio file
 	_, err = os.Stat(audioFileName)
 	haveAudioFile := !os.IsNotExist(err)
 
-	if !haveAudioFile && !haveVideoFile {
-		panic("Could not find `" + audioFileName + "` or `" + videoFileName + "`")
+	if !haveAudioFile {
+		panic("Could not find `" + audioFileName + "`")
 	}
 	fmt.Println("have file")
 
@@ -116,67 +110,14 @@ func main() {
 			}()
 		}
 
-		if haveVideoFile {
-			// Create a video track
-			videoTrack, videoTrackErr := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264}, "video", "pion")
-			if videoTrackErr != nil {
-				panic(videoTrackErr)
-			}
-
-			rtpSender, videoTrackErr := peerConnection.AddTrack(videoTrack)
-			if videoTrackErr != nil {
-				panic(videoTrackErr)
-			}
-
-			// Read incoming RTCP packets
-			// Before these packets are returned they are processed by interceptors. For things
-			// like NACK this needs to be called.
-			go func() {
-				rtcpBuf := make([]byte, 1500)
-				for {
-					if _, _, rtcpErr := rtpSender.Read(rtcpBuf); rtcpErr != nil {
-						return
-					}
-				}
-			}()
-
-			go func() {
-				// Open a H264 file and start reading using our IVFReader
-				file, h264Err := os.Open(videoFileName)
-				if h264Err != nil {
-					panic(h264Err)
-				}
-
-				h264, h264Err := h264reader.NewReader(file)
-				if h264Err != nil {
-					panic(h264Err)
-				}
-
-				// Wait for connection established
-				<-iceConnectedCtx.Done()
-
-				// Send our video file frame at a time. Pace our sending so we send it at the same speed it should be played back as.
-				// This isn't required since the video is timestamped, but we will such much higher loss if we send all at once.
-				//
-				// It is important to use a time.Ticker instead of time.Sleep because
-				// * avoids accumulating skew, just calling time.Sleep didn't compensate for the time spent parsing the data
-				// * works around latency issues with Sleep (see https://github.com/golang/go/issues/44343)
-				ticker := time.NewTicker(h264FrameDuration)
-				for ; true; <-ticker.C {
-					nal, h264Err := h264.NextNAL()
-					if errors.Is(h264Err, io.EOF) {
-						fmt.Printf("All video frames parsed and sent")
-						os.Exit(0)
-					}
-					if h264Err != nil {
-						panic(h264Err)
-					}
-
-					if h264Err = videoTrack.WriteSample(media.Sample{Data: nal.Data, Duration: h264FrameDuration}); h264Err != nil {
-						panic(h264Err)
-					}
-				}
-			}()
+		// It is necessary to create and add a video track in order to establish a connection
+		videoTrack, videoTrackErr := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264}, "video", "pion")
+		if videoTrackErr != nil {
+			panic(videoTrackErr)
+		}
+		_, videoTrackErr = peerConnection.AddTrack(videoTrack)
+		if videoTrackErr != nil {
+			panic(videoTrackErr)
 		}
 
 		// Set the handler for ICE connection state

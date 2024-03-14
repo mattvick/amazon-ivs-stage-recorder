@@ -11,7 +11,6 @@ import (
 	"github.com/pion/dtls/v2"
 	"github.com/pion/interceptor"
 	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/pkg/media"
 )
 
 func createPeerConnection(url, bearerToken string, configureCallback func(peerConnection *webrtc.PeerConnection) error) (*webrtc.PeerConnection, error) {
@@ -32,14 +31,50 @@ func createPeerConnection(url, bearerToken string, configureCallback func(peerCo
 		return nil, err
 	}
 
-	// Create video codec
-	// videoRTCPFeedback := []webrtc.RTCPFeedback{{Type: "goog-remb", Parameter: ""}, {Type: "ccm", Parameter: "fir"}, {Type: "nack", Parameter: ""}, {Type: "nack", Parameter: "pli"}}
-	// if err := m.RegisterCodec(webrtc.RTPCodecParameters{
-	// 	RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeVP8, ClockRate: 90000, Channels: 0, SDPFmtpLine: "", RTCPFeedback: videoRTCPFeedback},
-	// 	PayloadType:        96,
-	// }, webrtc.RTPCodecTypeVideo); err != nil {
-	// 	return nil, err
-	// }
+	// Create video codecs
+	videoRTCPFeedback := []webrtc.RTCPFeedback{{Type: "goog-remb", Parameter: ""}, {Type: "ccm", Parameter: "fir"}, {Type: "nack", Parameter: ""}, {Type: "nack", Parameter: "pli"}}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        102,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42001f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        104,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        106,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=42e01f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        108,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=4d001f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        127,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=0;profile-level-id=4d001f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        39,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
+	if err := m.RegisterCodec(webrtc.RTPCodecParameters{
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeH264, ClockRate: 90000, Channels: 0, SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=64001f", RTCPFeedback: videoRTCPFeedback},
+		PayloadType:        112,
+	}, webrtc.RTPCodecTypeVideo); err != nil {
+		return nil, err
+	}
 
 	// Appears to be just a way to generate reports
 	i := &interceptor.Registry{}
@@ -119,12 +154,4 @@ func postOffer(bearerToken, mediaServerURL string, peerConnection *webrtc.PeerCo
 
 func addToken(req *http.Request, bearerToken string) {
 	req.Header.Add("Authorization", "Bearer "+bearerToken)
-}
-
-func sendSilentAudio(audioTrack *webrtc.TrackLocalStaticSample) {
-	audioDuration := 20 * time.Millisecond
-	for ; true; <-time.NewTicker(audioDuration).C {
-		// This is an example of how to write an audio track
-		_ = audioTrack.WriteSample(media.Sample{Data: []byte{0xFF, 0xFF, 0xFE}, Duration: audioDuration})
-	}
 }
